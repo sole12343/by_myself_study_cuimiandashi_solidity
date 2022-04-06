@@ -1,0 +1,20 @@
+//SPDX-License-Identifier:MIT
+pragma solidity ^0.8.7;
+
+contract ViewandPureFunc{
+    //view 函数只需要读取区块链上的信息，并不会修改区块链的数据，用view会大幅度降低gas
+    uint public num ;
+    function viewFunc() external view returns(uint){
+        return num ;
+    } 
+    //pure函数既不从区块链读取也不向区块链写入，不论任何时间场合,pure函数相同输入一定有相同输出
+    function pureFunc() external pure returns (uint) {
+        return 1 ;
+    }
+    function addtoNum(uint x) external view returns(uint){
+        return x + num ;
+    }
+    function add(uint x , uint y) external pure returns(uint){
+        return x + y ;
+    }
+}
