@@ -30,7 +30,7 @@ contract Datalocations{
     }
 
     function _internal(uint[] calldata y) public returns(uint) {//calldata本质上和memory一样
-        uint x = y[0] ;                                         //不过如果使用calldata就不需要复制值到内存中，那么就可以节约gas
-        return x ;                                              //建议全部数据局部变量都使用 calldata
+        uint _x = y[0] ;                                         //不过如果使用calldata就不需要复制值到内存中，那么就可以节约gas
+        return _x ;                                              //建议全部数据局部变量都使用 calldata
     }
 }
