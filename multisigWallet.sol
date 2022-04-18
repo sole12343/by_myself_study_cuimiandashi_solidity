@@ -54,10 +54,10 @@ contract MultiSigWallet{
         _;
     }
     modifier notExecuted(uint _txId) {
-        require(transactions[_txId].execute , "tx  already executed") ;
+        require(!transactions[_txId].execute , "tx  already executed") ;
         _;
     }
-
+    //先提交交易，想要把多少钱转给谁
     function submit(address _to , uint _value , bytes calldata _data) external onlyOwner {
         transactions.push(Transaction({
             to: _to,
@@ -67,7 +67,7 @@ contract MultiSigWallet{
         }));
         emit Submit(transactions.length -1) ;
     }
-
+    //所有owner都可以进行授权，代表同意把钱转给他
     function approve(uint _txId) external onlyOwner txExists(_txId) notApprove(_txId) notExecuted(_txId) {
         approved[_txId][msg.sender] = true ;
         emit Approve(msg.sender , _txId) ;
@@ -77,6 +77,7 @@ contract MultiSigWallet{
             if(approved[_txId][owners[i]]){count += 1 ;}
         }
     } 
+    //如果授权数量大于required，可以进行执行，转账操作
     function execute(uint _txId) external txExists(_txId) notExecuted(_txId) {
         require(_getApproveCount(_txId) > required , "approvals < required") ;
         Transaction storage transaction = transactions[_txId] ;
@@ -85,10 +86,10 @@ contract MultiSigWallet{
         require(success , "tx failed") ;
         emit Execute(_txId) ;
     }
+    //如果反悔授权，可以revoke取消授权
     function revoke(uint _txId) external onlyOwner txExists(_txId) notExecuted(_txId)  {
         require(approved[_txId][msg.sender] , "tx not approve") ;
         approved[_txId][msg.sender] = false ;
         emit Revoke(msg.sender , _txId) ;
     }
-
 }
