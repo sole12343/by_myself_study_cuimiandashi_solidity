@@ -1,13 +1,14 @@
-//SPDX-License-Identifier:MIT
+//SPDX-License-Identifier:UNLICENSED
 pragma solidity ^0.8.10 ;
+import "IERC20.sol";
 
-import "./IERC20.sol"
+
 contract CrowdFund{
 
     event Launch(uint id, address indexed creator, uint goal, uint32 startAt, uint32 endAt) ;
     event Cancel(uint id) ;
     event Pledge(uint indexed id , address indexed caller , uint amount ) ;
-    event UnPledge(uint indexed id , address indexed caller , uint amount ) ;
+    event Unpledged(uint indexed id , address indexed caller , uint amount ) ;
     event Claim(uint id) ;
     event Refund(uint indexed id , address indexed caller , uint amount ) ;
 
@@ -56,8 +57,8 @@ contract CrowdFund{
     //出价参与众筹
     function pledge(uint _id , uint _amount) external {
         Campaign storage campaign = campaigns[_id] ;
-        require(block.timestamp >= startAt , "not started");
-        require(block.timestamp <= endAt, "ended") ;
+        require(block.timestamp >= campaign.startAt , "not started");
+        require(block.timestamp <= campaign.endAt, "ended") ;
 
         campaign.pledged += _amount ;
         pledgedAmount[_id][msg.sender] += _amount ;
@@ -73,7 +74,7 @@ contract CrowdFund{
         pledgedAmount[_id][msg.sender] -= _amount ;
         token.transfer(msg.sender , _amount) ;
 
-        emit Unpledge(_id , msg.sender , _amount) ;
+        emit Unpledged(_id , msg.sender , _amount) ;
     }
     //众筹完美结束后创建者可以领取代币
     function claim(uint _id) external {
@@ -84,7 +85,7 @@ contract CrowdFund{
 
         campaign.claimed = true ;
         token.transfer(msg.sender , campaign.pledged) ;
-        emit Claim(msg.sender , campaign.pledged) ;
+        emit Claim(_id) ;
     }
     //众筹没有达到目标，用户可以领回代币
     function refund(uint _id) external {
